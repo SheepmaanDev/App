@@ -1,0 +1,46 @@
+# Annuaire des services web de votre homelab, affiches dans l'app HomeLab.
+#
+# Copiez ce fichier :
+#   - dev local    :  cp services.yaml.example server/services.yaml
+#   - Docker       :  cp services.yaml.example services.yaml
+#                     (compose.yaml le monte alors dans le bridge)
+#
+# Chemin personnalise possible via la variable d'environnement SERVICES_FILE.
+#
+# Champs :
+#   name        (obligatoire) nom affiche
+#   url         (obligatoire) doit commencer par http:// ou https://
+#   description (optionnel)  courte description
+#   category    (optionnel)  etiquette de groupe
+#   icon        (optionnel)  nom d'icone Ionicons (defaut : link-outline)
+#   container   (optionnel)  nom du conteneur Docker lie -> l'app affiche
+#                            son etat (en marche / arrete) en temps reel
+
+services:
+  - name: Portainer
+    url: http://192.168.1.20:9000
+    description: Gestion Docker en interface web
+    category: Outils
+    icon: cube-outline
+    container: portainer
+
+  - name: Home Assistant
+    url: http://192.168.1.20:8123
+    description: Domotique
+    category: Maison
+    icon: home-outline
+    container: home-assistant
+
+  - name: Jellyfin
+    url: http://192.168.1.20:8096
+    description: Mediatheque films et series
+    category: Media
+    icon: film-outline
+    container: jellyfin
+
+  - name: Grafana
+    url: http://192.168.1.20:3000
+    description: Supervision et tableaux de bord
+    category: Supervision
+    icon: stats-chart-outline
+    container: grafana

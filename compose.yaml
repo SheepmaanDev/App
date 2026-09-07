@@ -1,0 +1,33 @@
+services:
+  bridge:
+    build: ./server
+    container_name: homelab-bridge
+    restart: unless-stopped
+    ports:
+      # Joignable depuis le LAN ET depuis le VPN (IP LAN du serveur).
+      # Ne redirigez JAMAIS ce port depuis votre box vers Internet :
+      # l'acces distant passe par le VPN, l'acces local par BRIDGE_TOKEN.
+      - '9999:9999'
+    environment:
+      PORT: '9999'
+      HOST: '0.0.0.0'
+      MOCK_DOCKER: 'false'
+      # BRIDGE_TOKEN doit etre definie dans un fichier .env a cote de ce compose
+      BRIDGE_TOKEN: '${BRIDGE_TOKEN:?BRIDGE_TOKEN doit etre definie dans le fichier .env}'
+    volumes:
+      # Socket Docker monte en LECTURE pour le bridge
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Annuaire des services : decommentez apres avoir copie
+      # services.yaml.example vers services.yaml (a cote de ce compose)
+      # - ./services.yaml:/app/services.yaml:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:9999/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
