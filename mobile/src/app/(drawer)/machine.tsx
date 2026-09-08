@@ -11,6 +11,7 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MenuButton } from '@/components/menu-button';
 import { MetricBar } from '@/components/metric-bar';
 import { OfflineBanner } from '@/components/offline-banner';
 import { ScreenHeader } from '@/components/screen-header';
@@ -250,6 +251,7 @@ export default function MachineScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScreenHeader
+        left={<MenuButton />}
         title="Machine"
         subtitle={
           error

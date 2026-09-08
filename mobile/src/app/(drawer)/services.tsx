@@ -13,6 +13,7 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MenuButton } from '@/components/menu-button';
 import { ScreenHeader } from '@/components/screen-header';
 import { ServiceCard } from '@/components/service-card';
 import { OfflineBanner } from '@/components/offline-banner';
@@ -209,6 +210,7 @@ export default function ServicesScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScreenHeader
+        left={<MenuButton />}
         title="Services"
         subtitle={
           error

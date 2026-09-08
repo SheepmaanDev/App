@@ -80,7 +80,7 @@ npm run web                          # navigateur (react-native-web)
 # ou : npm start                    # Expo Go sur telephone (scanner le QR code)
 ```
 
-Dans l'app, onglet **Reglages**, renseigner :
+Dans l'app, page **Reglages** (menu ☰), renseigner :
 
 - **Adresse du bridge** : `http://<IP-de-votre-machine>:9999`
   (sur un telephone, PAS `localhost` — utilisez l'IP LAN. Sur un
@@ -89,15 +89,21 @@ Dans l'app, onglet **Reglages**, renseigner :
 
 
 
-Puis **Tester la connexion** puis **Enregistrer**. L'onglet **Conteneurs**
+Puis **Tester la connexion** puis **Enregistrer**. La page **Conteneurs**
 affiche les cartes et permet Start / Stop / Restart (tire-pour-rafraichir
-ou bouton refresh). L'onglet **Services** presente l'annuaire de vos
+ou bouton refresh). La page **Services** presente l'annuaire de vos
 interfaces web (services.yaml) avec l'etat du conteneur lie ; un appui
-ouvre l'UI en WebView integree (navigateur sur le web). L'onglet
+ouvre l'UI en WebView integree (navigateur sur le web). La page
 **Conteneurs** propose une recherche (nom/image), des filtres
 (Tous / En marche / Arretes) et un rafraichissement automatique
 configurable dans Reglages (Off / 5 s / 15 s / 30 s). Un bandeau signale
 la perte de reseau ; les actions donnent un retour haptique sur mobile.
+
+La navigation se fait via un **menu lateral** (drawer) ouvrable/fermable :
+bouton ☰ dans chaque en-tete, swipe depuis le bord gauche. Ordre :
+**Accueil, Machine, Conteneurs, Services, Reglages**. La page **Accueil**
+resume l'essentiel (machine, conteneurs actifs, services) avec des cartes
+cliquables vers chaque section.
 
 > Note cleartext : pour la simplicite du LAN, l'app autorise le HTTP
 > (`usesCleartextTraffic` sur Android, `NSAllowsLocalNetworking` sur iOS,
@@ -107,16 +113,18 @@ Structure du code mobile :
 
 ```
 mobile/src/
-├─ app/                Routes Expo Router (layout racine + onglets)
-│  ├─ (tabs)/
-│  │  ├─ index.tsx     Ecran Conteneurs (cartes, etat, actions)
-│  │  ├─ services.tsx  Ecran Services (annuaire, etat des conteneurs lies)
-│  │  ├─ machine.tsx   Ecran Machine (CPU, RAM, disques, reseau, temp.)
-│  │  └─ settings.tsx  Ecran Reglages (URL + token, test de connexion)
+├─ app/                Routes Expo Router (layout racine + menu lateral)
+│  ├─ (drawer)/
+│  │  ├─ _layout.tsx   Drawer : menu ☰ ouvrable/fermable, theme sombre
+│  │  ├─ index.tsx     Accueil (tableau de bord : machine, conteneurs, services)
+│  │  ├─ machine.tsx   Machine (CPU, RAM, disques, reseau, temp.)
+│  │  ├─ conteneurs.tsx Conteneurs (cartes, etat, actions, recherche/filtres)
+│  │  ├─ services.tsx  Services (annuaire, etat des conteneurs lies)
+│  │  └─ settings.tsx  Reglages (URL + token, test de connexion)
 │  ├─ container/[id].tsx  Detail conteneur (logs live WS + stats CPU/RAM)
 │  └─ service-view.tsx    UI web d'un service en WebView integree (natif)
 ├─ api/                Client du bridge (fetch + Bearer, timeout) + stockage securise
-├─ components/         ContainerCard, StatusBadge, ScreenHeader, LogViewer, StatsGrid, ServiceCard, OfflineBanner, MetricBar
+├─ components/         ContainerCard, StatusBadge, ScreenHeader, LogViewer, StatsGrid, ServiceCard, OfflineBanner, MetricBar, MenuButton
 ├─ hooks/              useOnline (NetInfo : detection hors-ligne, mobile + web)
 ├─ stores/             Zustand (config bridge + auto-refresh persistes : SecureStore natif / localStorage web)
 ├─ utils/              Confirmations, alertes, formatage (octets, debits, durees)
@@ -135,7 +143,7 @@ npx expo export --platform web      # bundle Metro + rendu statique (smoke test)
 
 ## Annuaire des services (services.yaml)
 
-L'onglet **Services** de l'app lit un fichier YAML declare par le bridge
+La page **Services** de l'app lit un fichier YAML declare par le bridge
 (defaut : `services.yaml` a cote du bridge, personnalisable via la variable
 `SERVICES_FILE`). Partez de l'exemple fourni :
 
@@ -213,7 +221,7 @@ usage local ou via votre VPN (deja en place chez vous) :
 1. Le bridge ecoute sur `0.0.0.0:9999` (voir `compose.yaml`) : il est
    joignable a l'IP LAN du serveur, ex. `http://192.168.1.20:9999`.
 2. Connectez le telephone a votre VPN, puis utilisez **la meme adresse**
-   dans l'onglet Reglages : le tunnel route le trafic vers le LAN, le
+   dans la page Reglages : le tunnel route le trafic vers le LAN, le
    bridge repond comme si vous etiez a la maison (conteneurs, logs,
    stats, services).
 
@@ -228,9 +236,9 @@ usage local ou via votre VPN (deja en place chez vous) :
 - Les URL de `services.yaml` en IP LAN fonctionnent telles quelles via le
   VPN (la WebView et le client de l'app acceptent le HTTP local).
 
-## Supervision de la machine (onglet Machine)
+## Supervision de la machine (page Machine)
 
-L'onglet **Machine** affiche les metriques de la Debian qui heberge le
+La page **Machine** affiche les metriques de la Debian qui heberge le
 bridge, rafraichies toutes les 3 s : CPU + charge (1/5/15 min), RAM et
 swap, disques par partition, debits reseau (descendant / montant) et
 totaux, temperature CPU (si les capteurs sont exposes, ex. lm-sensors),
@@ -268,5 +276,6 @@ npm run build     # compilation TypeScript
 - **[x] Sprint 4** : annuaire de services (GET /services, services.yaml) + WebView integree des UIs web
 - **[x] Sprint 5** : recherche + filtres conteneurs, auto-refresh configurable (Off/5s/15s/30s), detection hors-ligne (NetInfo), retour haptique (expo-haptics), metadonnees web (PWA favicon/theme)
 - **[x] Sprint 6** : exposition publique retiree -> acces distant via le VPN existant (compose sur 0.0.0.0:9999, garde-fous documentes)
-- **[x] Sprint 7** : supervision de la machine hote (GET /host/metrics, onglet Machine : CPU/RAM/disques/reseau/temperature ; compose network_mode host + pid host + /hostfs)
+- **[x] Sprint 7** : supervision de la machine hote (GET /host/metrics, page Machine : CPU/RAM/disques/reseau/temperature ; compose network_mode host + pid host + /hostfs)
+- **[x] Sprint 8** : menu lateral (drawer ouvrable/fermable via bouton ☰) + page Accueil tableau de bord ; ordre Accueil / Machine / Conteneurs / Services / Reglages
 - **Plus tard** : integration WireGuard dans l'app (profil + QR)

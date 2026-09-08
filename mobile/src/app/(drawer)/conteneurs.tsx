@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ContainerCard } from '@/components/container-card';
+import { MenuButton } from '@/components/menu-button';
 import { OfflineBanner } from '@/components/offline-banner';
 import { ScreenHeader } from '@/components/screen-header';
 import { useOnline } from '@/hooks/use-online';
@@ -288,6 +289,7 @@ export default function ContainersScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScreenHeader
+        left={<MenuButton />}
         title="Conteneurs"
         subtitle={
           error
