@@ -111,13 +111,15 @@ mobile/src/
 │  ├─ (tabs)/
 │  │  ├─ index.tsx     Ecran Conteneurs (cartes, etat, actions)
 │  │  ├─ services.tsx  Ecran Services (annuaire, etat des conteneurs lies)
+│  │  ├─ machine.tsx   Ecran Machine (CPU, RAM, disques, reseau, temp.)
 │  │  └─ settings.tsx  Ecran Reglages (URL + token, test de connexion)
 │  ├─ container/[id].tsx  Detail conteneur (logs live WS + stats CPU/RAM)
 │  └─ service-view.tsx    UI web d'un service en WebView integree (natif)
 ├─ api/                Client du bridge (fetch + Bearer, timeout) + stockage securise
-├─ components/         ContainerCard, StatusBadge, ScreenHeader, LogViewer, StatsGrid, ServiceCard, OfflineBanner
+├─ components/         ContainerCard, StatusBadge, ScreenHeader, LogViewer, StatsGrid, ServiceCard, OfflineBanner, MetricBar
 ├─ hooks/              useOnline (NetInfo : detection hors-ligne, mobile + web)
 ├─ stores/             Zustand (config bridge + auto-refresh persistes : SecureStore natif / localStorage web)
+├─ utils/              Confirmations, alertes, formatage (octets, debits, durees)
 ├─ utils/              Confirmations et alertes (mobile + web)
 ├─ types.ts            Types partages avec le serveur
 └─ theme.ts            Palette sombre « console »
@@ -191,6 +193,7 @@ Toutes les routes exigent `Authorization: Bearer <token>` sauf `/health`.
 | GET     | /containers/:id/stats        | Stats instantanees CPU / RAM / reseau|
 | WS GET  | /containers/:id/logs/stream  | Logs en temps reel (WebSocket)       |
 | GET     | /services                    | Annuaire des services (services.yaml)|
+| GET     | /host/metrics                | Metriques machine (CPU, RAM, reseau…)|
 
 `:id` accepte l'ID Docker (ou un prefixe unique) et le nom du conteneur.
 
@@ -225,6 +228,20 @@ usage local ou via votre VPN (deja en place chez vous) :
 - Les URL de `services.yaml` en IP LAN fonctionnent telles quelles via le
   VPN (la WebView et le client de l'app acceptent le HTTP local).
 
+## Supervision de la machine (onglet Machine)
+
+L'onglet **Machine** affiche les metriques de la Debian qui heberge le
+bridge, rafraichies toutes les 3 s : CPU + charge (1/5/15 min), RAM et
+swap, disques par partition, debits reseau (descendant / montant) et
+totaux, temperature CPU (si les capteurs sont exposes, ex. lm-sensors),
+uptime et nombre de processus.
+
+Dans `compose.yaml`, le bridge tourne avec `network_mode: host`,
+`pid: host` et la racine de l'hote montee en lecture seule sur `/hostfs` :
+il mesure ainsi la machine elle-meme (vraies interfaces reseau, vraies
+partitions via statfs) et non son conteneur. Hors Docker (developpement),
+`systeminformation` mesure directement la machine locale.
+
 ## Tests
 
 ```bash
@@ -251,4 +268,5 @@ npm run build     # compilation TypeScript
 - **[x] Sprint 4** : annuaire de services (GET /services, services.yaml) + WebView integree des UIs web
 - **[x] Sprint 5** : recherche + filtres conteneurs, auto-refresh configurable (Off/5s/15s/30s), detection hors-ligne (NetInfo), retour haptique (expo-haptics), metadonnees web (PWA favicon/theme)
 - **[x] Sprint 6** : exposition publique retiree -> acces distant via le VPN existant (compose sur 0.0.0.0:9999, garde-fous documentes)
+- **[x] Sprint 7** : supervision de la machine hote (GET /host/metrics, onglet Machine : CPU/RAM/disques/reseau/temperature ; compose network_mode host + pid host + /hostfs)
 - **Plus tard** : integration WireGuard dans l'app (profil + QR)

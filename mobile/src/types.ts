@@ -90,3 +90,59 @@ export interface ServicesResponse {
   source: 'file' | 'mock' | 'empty';
   services: ServiceEntry[];
 }
+
+/** Informations quasi-statiques de la machine hote. */
+export interface HostStatic {
+  hostname: string;
+  distro: string;
+  kernel: string;
+  arch: string;
+  cpuModel: string;
+  cores: number;
+}
+
+export interface HostCpuLoad {
+  percent: number;
+  load1: number;
+  load5: number;
+  load15: number;
+}
+
+export interface HostMemory {
+  total: number; // octets
+  used: number; // octets
+  free: number; // octets
+  percent: number;
+  swapTotal: number; // octets
+  swapUsed: number; // octets
+}
+
+export interface HostDisk {
+  mount: string;
+  total: number; // octets
+  used: number; // octets
+  percent: number;
+}
+
+export interface HostNetworkIface {
+  name: string;
+  rxRate: number; // octets/s
+  txRate: number; // octets/s
+  rxTotal: number; // octets depuis le boot
+  txTotal: number; // octets depuis le boot
+}
+
+export interface HostMetrics {
+  uptime: number; // secondes depuis le boot
+  cpu: HostCpuLoad;
+  memory: HostMemory;
+  disks: HostDisk[];
+  network: HostNetworkIface[];
+  temperatureC: number | null;
+  processes: { all: number; running: number };
+}
+
+export interface HostMetricsResponse {
+  host: HostStatic;
+  metrics: HostMetrics;
+}

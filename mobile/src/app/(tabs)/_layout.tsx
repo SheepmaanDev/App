@@ -48,6 +48,19 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="machine"
+        options={{
+          title: 'Machine',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'speedometer' : 'speedometer-outline'}
+              size={size}
+              color={color}
+            />
+          )
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Réglages',

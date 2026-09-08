@@ -16,6 +16,7 @@
       }
     },
     "android": {
+      "package": "fr.qmouton.homelab",
       "adaptiveIcon": {
         "backgroundColor": "#0B0E14",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -58,6 +59,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fb26d734-fbf3-48e4-9bee-b3a6cb6fdca9"
+      }
     }
   }
 }

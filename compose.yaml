@@ -3,20 +3,27 @@ services:
     build: ./server
     container_name: homelab-bridge
     restart: unless-stopped
-    ports:
-      # Joignable depuis le LAN ET depuis le VPN (IP LAN du serveur).
-      # Ne redirigez JAMAIS ce port depuis votre box vers Internet :
-      # l'acces distant passe par le VPN, l'acces local par BRIDGE_TOKEN.
-      - '9999:9999'
+    # Reseau de l'hote : le bridge ecoute directement sur le port 9999 de la
+    # Debian (LAN + VPN) et voit les vraies interfaces reseau (stats reseau
+    # de la machine). Ne redirigez JAMAIS ce port vers Internet : l'acces
+    # distant passe par le VPN, l'acces local par BRIDGE_TOKEN.
+    network_mode: host
+    # Espace de processus de l'hote : /proc/1/mountinfo decrit les montages
+    # reels (stats disques) et le nombre de processus est celui de la machine.
+    pid: host
     environment:
       PORT: '9999'
       HOST: '0.0.0.0'
       MOCK_DOCKER: 'false'
+      # Racine de l'hote montee en /hostfs (voir volumes) : stats disques.
+      HOST_FS_ROOT: '/hostfs'
       # BRIDGE_TOKEN doit etre definie dans un fichier .env a cote de ce compose
       BRIDGE_TOKEN: '${BRIDGE_TOKEN:?BRIDGE_TOKEN doit etre definie dans le fichier .env}'
     volumes:
       # Socket Docker monte en LECTURE pour le bridge
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Racine de l'hote en LECTURE SEULE : statfs() pour les stats disques
+      - /:/hostfs:ro
       # Annuaire des services : decommentez apres avoir copie
       # services.yaml.example vers services.yaml (a cote de ce compose)
       # - ./services.yaml:/app/services.yaml:ro
