@@ -1,14 +1,13 @@
 {
   "expo": {
-    "name": "HomeLab",
-    "slug": "homelab-mobile",
+    "name": "Sheepmaan",
+    "slug": "sheepmaan",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "homelab",
     "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
@@ -20,16 +19,15 @@
       "adaptiveIcon": {
         "backgroundColor": "#0B0E14",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundImage": "./assets/images/android-icon-background.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png",
-      "name": "HomeLab",
-      "shortName": "HomeLab",
+      "name": "Sheepmaan",
+      "shortName": "Sheepmaan",
       "themeColor": "#0B0E14",
       "backgroundColor": "#0B0E14"
     },

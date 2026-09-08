@@ -218,11 +218,49 @@ export default function AccueilScreen() {
     return () => clearInterval(id);
   }, [configured, load]);
 
+  if (!configured) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <ScreenHeader left={<MenuButton />} title="Sheepmaan" />
+        <View style={styles.center}>
+          <Ionicons name="home-outline" size={46} color={colors.textMuted} />
+          <Text style={styles.emptyTitle}>Pont non configuré</Text>
+          <Text style={styles.emptyText}>
+            Renseigne l'adresse du bridge et ton jeton dans les réglages pour
+            piloter ton homelab.
+          </Text>
+          <Pressable
+            style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
+            onPress={() => router.push('/settings')}
+          >
+            <Ionicons name="settings-outline" size={16} color={colors.background} />
+            <Text style={styles.primaryButtonLabel}>Aller aux réglages</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <ScreenHeader
+          left={<MenuButton />}
+          title="Sheepmaan"
+          subtitle="Chargement…"
+        />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.accent} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScreenHeader
         left={<MenuButton />}
-        title="HomeLab"
+        title="Sheepmaan"
         subtitle={
           error
             ? 'Erreur de connexion'

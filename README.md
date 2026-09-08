@@ -1,4 +1,4 @@
-# Homelab Mobile
+# Sheepmaan
 
 Application mobile (React Native / Expo) permettant de piloter vos services
 Docker heberges chez vous, completee par un petit serveur `homelab-bridge`
@@ -12,7 +12,7 @@ qui fait le lien entre l'app et le socket Docker de votre machine.
 
 ```
 AppMobile/
-├─ mobile/                App Expo SDK 54 (TypeScript, Expo Router)
+├─ mobile/                App Expo SDK 57 (TypeScript, Expo Router)
 ├─ server/                Homelab Bridge : API REST + WebSocket (Node, TS, Fastify, dockerode)
 ├─ compose.yaml           Deploiement du bridge (Docker Compose, LAN + VPN)
 ├─ services.yaml.example  Exemple d'annuaire de services
