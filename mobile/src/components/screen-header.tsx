@@ -5,12 +5,15 @@ import { colors, spacing } from '@/theme';
 interface Props {
   title: string;
   subtitle?: string;
+  /** Element affiche avant le titre (ex. bouton menu du drawer). */
+  left?: ReactNode;
   right?: ReactNode;
 }
 
-export function ScreenHeader({ title, subtitle, right }: Props) {
+export function ScreenHeader({ title, subtitle, right, left }: Props) {
   return (
     <View style={styles.container}>
+      {left}
       <View style={styles.texts}>
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}

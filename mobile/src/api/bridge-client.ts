@@ -5,6 +5,7 @@ import type {
   ContainerStats,
   ContainerSummary,
   HealthInfo,
+  HostMetricsResponse,
   ServicesResponse,
   SystemInfo
 } from '@/types';
@@ -136,6 +137,11 @@ export class BridgeClient {
   /** Annuaire des services web du homelab (services.yaml cote bridge). */
   listServices() {
     return this.request<ServicesResponse>('GET', '/services');
+  }
+
+  /** Metriques de la machine hote (CPU, RAM, disques, reseau...). */
+  getHostMetrics() {
+    return this.request<HostMetricsResponse>('GET', '/host/metrics');
   }
 
   start(id: string) {

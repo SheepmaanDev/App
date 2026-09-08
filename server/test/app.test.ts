@@ -6,6 +6,8 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
 import type { ContainerSummary } from '../src/docker/types.js';
+import { parseHostMounts } from '../src/host/si.js';
+import type { HostClient } from '../src/host/types.js';
 
 describe('Homelab Bridge (mode mock)', () => {
   const token = 'test-token';
@@ -331,5 +333,113 @@ describe('Annuaire des services (GET /services)', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ count: 0, source: 'empty', services: [] });
     await app.close();
+  });
+});
+
+describe('Metriques machine (GET /host/metrics)', () => {
+  const token = 'test-token';
+  const authHeaders = { authorization: `Bearer ${token}` };
+
+  const fakeHost: HostClient = {
+    staticInfo: async () => ({
+      hostname: 'debian',
+      distro: 'Debian GNU/Linux 13',
+      kernel: '6.12.0',
+      arch: 'x64',
+      cpuModel: 'Test CPU 4 coeurs',
+      cores: 4
+    }),
+    metrics: async () => ({
+      uptime: 7200,
+      cpu: { percent: 12.5, load1: 0.1, load5: 0.2, load15: 0.3 },
+      memory: {
+        total: 8e9,
+        used: 4e9,
+        free: 4e9,
+        percent: 50,
+        swapTotal: 1e9,
+        swapUsed: 0
+      },
+      disks: [{ mount: '/', total: 500e9, used: 250e9, percent: 50 }],
+      network: [{ name: 'eth0', rxRate: 1000, txRate: 500, rxTotal: 10, txTotal: 20 }],
+      temperatureC: 55,
+      processes: { all: 120, running: 2 }
+    })
+  };
+
+  it('refuse /host/metrics sans token', async () => {
+    const app = await buildApp({
+      config: { token, mockDocker: true },
+      hostClient: fakeHost
+    });
+    await app.ready();
+    const res = await app.inject({ method: 'GET', url: '/host/metrics' });
+    expect(res.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('renvoie infos + metriques avec le token', async () => {
+    const app = await buildApp({
+      config: { token, mockDocker: true },
+      hostClient: fakeHost
+    });
+    await app.ready();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/host/metrics',
+      headers: authHeaders
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.host.hostname).toBe('debian');
+    expect(body.host.distro).toContain('Debian');
+    expect(body.metrics.cpu.percent).toBe(12.5);
+    expect(body.metrics.memory.percent).toBe(50);
+    expect(body.metrics.disks).toHaveLength(1);
+    expect(body.metrics.network[0].name).toBe('eth0');
+    expect(body.metrics.temperatureC).toBe(55);
+    expect(body.metrics.processes.all).toBe(120);
+    await app.close();
+  });
+
+  it('renvoie temperatureC a null si non disponible', async () => {
+    const app = await buildApp({
+      config: { token, mockDocker: true },
+      hostClient: {
+        ...fakeHost,
+        metrics: async () => ({
+          ...(await fakeHost.metrics()),
+          temperatureC: null
+        })
+      }
+    });
+    await app.ready();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/host/metrics',
+      headers: authHeaders
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().metrics.temperatureC).toBeNull();
+    await app.close();
+  });
+});
+
+describe("parseHostMounts (disques de l'hote)", () => {
+  it('garde les vraies partitions et deduplique par peripherique', () => {
+    const content = [
+      '20 1 8:1 / / rw,relatime - ext4 /dev/sda1 rw',
+      '21 1 8:2 /boot /boot rw,relatime - ext4 /dev/sda2 rw',
+      '35 1 8:1 /home /home rw,relatime - ext4 /dev/sda1 rw',
+      '40 1 0:40 / /proc rw,relatime - proc proc rw',
+      '50 1 0:50 / /run rw,nosuid - tmpfs tmpfs rw',
+      '60 1 253:0 /data /mnt/data\\040disque rw - xfs /dev/mapper/vg-data rw'
+    ].join('\n');
+    const mounts = parseHostMounts(content);
+    expect(mounts).toEqual([
+      { mount: '/', source: '/dev/sda1' },
+      { mount: '/boot', source: '/dev/sda2' },
+      { mount: '/mnt/data disque', source: '/dev/mapper/vg-data' }
+    ]);
   });
 });

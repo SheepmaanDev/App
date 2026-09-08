@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BridgeClient, BridgeError } from '@/api/bridge-client';
+import { MenuButton } from '@/components/menu-button';
 import { ScreenHeader } from '@/components/screen-header';
 import {
   useBridgeConfigured,
@@ -215,7 +216,11 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <ScreenHeader title="Réglages" subtitle="Connexion au pont homelab" />
+      <ScreenHeader
+        left={<MenuButton />}
+        title="Réglages"
+        subtitle="Connexion au pont homelab"
+      />
 
       <ScrollView
         contentContainerStyle={styles.content}
