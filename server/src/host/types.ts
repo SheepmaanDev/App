@@ -68,4 +68,6 @@ export interface HostMetrics {
 export interface HostClient {
   staticInfo(): Promise<HostStatic>;
   metrics(): Promise<HostMetrics>;
+  /** Redemarre la machine hote (systemd via D-Bus, ou systemctl). */
+  reboot(): Promise<void>;
 }

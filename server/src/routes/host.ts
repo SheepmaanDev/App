@@ -17,4 +17,20 @@ export function registerHostRoutes(
     ]);
     return { host: hostInfo, metrics };
   });
+
+  /**
+   * Redemarrage de la machine hote (POST /host/reboot).
+   * Protege par le token ; l'app demande une double confirmation.
+   */
+  app.post('/host/reboot', async (request, reply) => {
+    try {
+      await host.reboot();
+      return { ok: true, action: 'reboot' };
+    } catch (error) {
+      return await reply.code(500).send({
+        error:
+          error instanceof Error ? error.message : 'Redémarrage impossible.'
+      });
+    }
+  });
 }

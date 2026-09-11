@@ -87,7 +87,18 @@ export class BridgeClient {
         throw new BridgeError('Ressource introuvable (404).', 'not_found');
       }
       if (!response.ok) {
-        throw new BridgeError(`Erreur du serveur (HTTP ${response.status}).`, 'http');
+        // Si le serveur renvoie un message { error }, on l'affiche tel quel.
+        let detail = '';
+        try {
+          const body = (await response.json()) as { error?: string };
+          if (typeof body?.error === 'string') detail = body.error;
+        } catch {
+          // corps non JSON
+        }
+        throw new BridgeError(
+          detail || `Erreur du serveur (HTTP ${response.status}).`,
+          'http'
+        );
       }
       if (response.status === 204) return undefined as T;
       return (await response.json()) as T;
@@ -142,6 +153,14 @@ export class BridgeClient {
   /** Metriques de la machine hote (CPU, RAM, disques, reseau...). */
   getHostMetrics() {
     return this.request<HostMetricsResponse>('GET', '/host/metrics');
+  }
+
+  /** Redemarre la machine hote (double confirmation cote app). */
+  rebootHost() {
+    return this.request<{ ok: boolean; action: string }>(
+      'POST',
+      '/host/reboot'
+    );
   }
 
   start(id: string) {

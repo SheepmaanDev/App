@@ -202,6 +202,7 @@ Toutes les routes exigent `Authorization: Bearer <token>` sauf `/health`.
 | WS GET  | /containers/:id/logs/stream  | Logs en temps reel (WebSocket)       |
 | GET     | /services                    | Annuaire des services (services.yaml)|
 | GET     | /host/metrics                | Metriques machine (CPU, RAM, reseau…)|
+| POST    | /host/reboot                 | Redemarrer la machine hote (systemd) |
 
 `:id` accepte l'ID Docker (ou un prefixe unique) et le nom du conteneur.
 
@@ -240,15 +241,19 @@ usage local ou via votre VPN (deja en place chez vous) :
 
 La page **Machine** affiche les metriques de la Debian qui heberge le
 bridge, rafraichies toutes les 3 s : CPU + charge (1/5/15 min), RAM et
-swap, disques par partition, debits reseau (descendant / montant) et
-totaux, temperature CPU (si les capteurs sont exposes, ex. lm-sensors),
-uptime et nombre de processus.
+swap (RAM **hors cache/buffers**, calculee via MemAvailable), disques par
+partition (locaux, RAID et **montages NFS/CIFS/SMB** inclus), debits
+reseau (descendant / montant) et totaux, temperature CPU (si les capteurs
+sont exposes, ex. lm-sensors), uptime et nombre de processus. Un bouton
+**Reboot** (double confirmation) redemarre la machine via le socket D-Bus
+systeme de l'hote, sans privileges root dans le conteneur.
 
 Dans `compose.yaml`, le bridge tourne avec `network_mode: host`,
-`pid: host` et la racine de l'hote montee en lecture seule sur `/hostfs` :
-il mesure ainsi la machine elle-meme (vraies interfaces reseau, vraies
-partitions via statfs) et non son conteneur. Hors Docker (developpement),
-`systeminformation` mesure directement la machine locale.
+`pid: host`, le socket D-Bus monte, et la racine de l'hote montee en
+lecture seule sur `/hostfs` avec **propagation rslave** (les sous-montages
+de l'hote restent visibles -> statfs correct par montage, y compris NFS).
+Hors Docker (developpement), `systeminformation` mesure directement la
+machine locale.
 
 ## Tests
 
@@ -278,4 +283,5 @@ npm run build     # compilation TypeScript
 - **[x] Sprint 6** : exposition publique retiree -> acces distant via le VPN existant (compose sur 0.0.0.0:9999, garde-fous documentes)
 - **[x] Sprint 7** : supervision de la machine hote (GET /host/metrics, page Machine : CPU/RAM/disques/reseau/temperature ; compose network_mode host + pid host + /hostfs)
 - **[x] Sprint 8** : menu lateral (drawer ouvrable/fermable via bouton ☰) + page Accueil tableau de bord ; ordre Accueil / Machine / Conteneurs / Services / Reglages
+- **[x] Sprint 9** : RAM hors cache (MemAvailable), disques NFS/CIFS/SMB (propagation rslave), redemarrage de la machine (POST /host/reboot via socket D-Bus, bouton Reboot avec confirmation)
 - **Plus tard** : integration WireGuard dans l'app (profil + QR)
