@@ -498,6 +498,17 @@ export default function MachineScreen() {
               <Text style={styles.rowLabel}>Architecture</Text>
               <Text style={styles.rowValue}>{info.arch}</Text>
             </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.row,
+                pressed && styles.pressed,
+                { marginTop: spacing.xs }
+              ]}
+              onPress={() => router.push('/ssh')}
+            >
+              <Text style={styles.rowLabel}>Terminal SSH</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </Pressable>
             <View style={[styles.row, { marginTop: spacing.xs }]}>
               <Text style={styles.rowLabel}>Redémarrer la machine</Text>
               <Pressable

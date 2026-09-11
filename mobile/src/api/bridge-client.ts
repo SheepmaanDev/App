@@ -192,7 +192,6 @@ export type LogStreamStatus =
   | 'error'
   | 'unauthorized'
   | 'not_found';
-
 export interface LogStreamHandlers {
   onLine: (line: string) => void;
   onStatus: (status: LogStreamStatus) => void;
@@ -266,6 +265,149 @@ export function createLogStream(
       closedByUser = true;
       try {
         ws?.close();
+      } finally {
+        ws = null;
+      }
+    }
+  };
+}
+
+/* ------------------------------------------------------------------------ */
+/* Terminal SSH (WS /host/ssh)                                              */
+/* ------------------------------------------------------------------------ */
+
+export type SshStreamStatus =
+  | 'idle'
+  | 'connecting'
+  | 'connected'
+  | 'error'
+  | 'unauthorized'
+  | 'closed';
+
+export interface SshCredentials {
+  user: string;
+  password: string;
+  port: number;
+}
+
+export interface SshStreamHandlers {
+  onStatus: (status: SshStreamStatus, message?: string) => void;
+  onData: (text: string) => void;
+  onDone: (code: number | null) => void;
+}
+
+export interface SshStreamHandle {
+  run(command: string): void;
+  close(): void;
+}
+
+/** Retire les sequences d'echappement ANSI (le bridge n'utilise pas de PTY). */
+export function stripAnsi(text: string): string {
+  return text
+    .replace(/\x1B\[[0-9;]*[A-Za-z]/g, '')
+    .replace(/\x1B\][^\x07]*\x07/g, '')
+    .replace(/\x1B[=>]/g, '');
+}
+
+/**
+ * Terminal SSH via WebSocket du bridge (/host/ssh) :
+ * auth par message { type: 'auth', token }, puis connect/run.
+ */
+export function createSshStream(
+  baseUrl: string,
+  token: string,
+  creds: SshCredentials,
+  handlers: SshStreamHandlers
+): SshStreamHandle {
+  let ws: WebSocket | null = null;
+  let closedByUser = false;
+
+  const noopHandle: SshStreamHandle = { run() {}, close() {} };
+
+  let wsUrl: string;
+  try {
+    const normalized = normalizeBaseUrl(baseUrl);
+    wsUrl = `${normalized.replace(/^http/i, 'ws')}/host/ssh`;
+  } catch {
+    handlers.onStatus('error');
+    return noopHandle;
+  }
+
+  try {
+    ws = new WebSocket(wsUrl);
+  } catch {
+    handlers.onStatus('error');
+    return noopHandle;
+  }
+  const socket = ws as WebSocket;
+
+  const send = (msg: Record<string, unknown>): void => {
+    try {
+      socket.send(JSON.stringify(msg));
+    } catch {
+      // socket ferme entre-temps
+    }
+  };
+
+  socket.onopen = () => {
+    if (closedByUser) return;
+    send({ type: 'auth', token: token.trim() });
+    send({
+      type: 'connect',
+      user: creds.user,
+      password: creds.password,
+      port: creds.port
+    });
+  };
+
+  socket.onmessage = (event) => {
+    if (closedByUser) return;
+    if (typeof event.data !== 'string') return;
+    let msg: Record<string, unknown>;
+    try {
+      msg = JSON.parse(event.data) as Record<string, unknown>;
+    } catch {
+      return;
+    }
+    switch (msg.type) {
+      case 'ready':
+        break; // token accepte
+      case 'connected':
+        handlers.onStatus('connected');
+        break;
+      case 'data':
+        handlers.onData(String(msg.text ?? ''));
+        break;
+      case 'done':
+        handlers.onDone(typeof msg.code === 'number' ? msg.code : null);
+        break;
+      case 'error':
+        handlers.onStatus('error', String(msg.message ?? 'Erreur SSH.'));
+        break;
+      default:
+        break;
+    }
+  };
+
+  socket.onerror = () => {
+    if (!closedByUser) handlers.onStatus('error');
+  };
+
+  socket.onclose = (event) => {
+    if (closedByUser) return;
+    if (event.code === 4401) handlers.onStatus('unauthorized');
+    else if (event.code === 4500) handlers.onStatus('error');
+    else handlers.onStatus('closed');
+  };
+
+  return {
+    run(command: string) {
+      send({ type: 'run', command });
+    },
+    close() {
+      closedByUser = true;
+      try {
+        socket.close();
       } finally {
         ws = null;
       }

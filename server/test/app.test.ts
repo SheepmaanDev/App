@@ -8,6 +8,11 @@ import { loadConfig } from '../src/config.js';
 import type { ContainerSummary } from '../src/docker/types.js';
 import { parseHostMounts } from '../src/host/si.js';
 import type { HostClient } from '../src/host/types.js';
+import {
+  SshConnectError,
+  type SshSession,
+  type SshSessionFactory
+} from '../src/ssh/session.js';
 
 describe('Homelab Bridge (mode mock)', () => {
   const token = 'test-token';
@@ -485,5 +490,98 @@ describe("parseHostMounts (disques de l'hote)", () => {
       { mount: '/mnt/data disque', source: '/dev/mapper/vg-data' },
       { mount: '/mnt/nas', source: '192.168.1.50:/volume1/nas' }
     ]);
+  });
+});
+
+describe('Terminal SSH (WS /host/ssh)', () => {
+  const token = 'test-token';
+
+  const fakeSession: SshSession = {
+    exec: async (command) => ({ output: `OK:${command}`, code: 0 }),
+    end: () => undefined
+  };
+  const fakeFactory: SshSessionFactory = {
+    connect: async (user) => {
+      if (user === 'mauvais') {
+        throw new SshConnectError('Identifiants SSH refusés par la machine.');
+      }
+      return fakeSession;
+    }
+  };
+
+  function build() {
+    return buildApp({
+      config: { token, mockDocker: true },
+      sshFactory: fakeFactory
+    });
+  }
+
+  // Note : injectWS renvoie un socket deja ouvert (readyState 1) — on envoie
+  // immediatement, sans attendre un event 'open' qui a deja eu lieu.
+  it('ferme 4401 sur un auth SSH invalide', async () => {
+    const app = await build();
+    await app.ready();
+    const ws = await app.injectWS('/host/ssh');
+    const closed = new Promise<number>((resolve) => {
+      ws.on('close', (code: number) => resolve(code));
+    });
+    ws.send(JSON.stringify({ type: 'auth', token: 'mauvais-token' }));
+    const code = await closed;
+    expect(code).toBe(4401);
+    await app.close();
+  });
+
+  it('connecte puis execute une commande (fake)', async () => {
+    const app = await build();
+    await app.ready();
+    const ws = await app.injectWS('/host/ssh');
+    const messages: Array<Record<string, unknown>> = [];
+    const connected = new Promise<void>((resolve) => {
+      ws.on('message', (raw: Buffer) => {
+        const m = JSON.parse(raw.toString()) as Record<string, unknown>;
+        messages.push(m);
+        if (m.type === 'connected') resolve();
+      });
+    });
+    ws.send(JSON.stringify({ type: 'auth', token }));
+    ws.send(
+      JSON.stringify({ type: 'connect', user: 'qmouton', password: 'secret', port: 22 })
+    );
+    await connected;
+
+    const donePromise = new Promise<Record<string, unknown>>((resolve) => {
+      ws.on('message', (raw: Buffer) => {
+        const m = JSON.parse(raw.toString()) as Record<string, unknown>;
+        if (m.type === 'done') resolve(m);
+      });
+    });
+    ws.send(JSON.stringify({ type: 'run', command: 'systemctl status' }));
+    const done = await donePromise;
+
+    expect(done.code).toBe(0);
+    const data = messages.find((m) => m.type === 'data') as { text: string };
+    expect(data.text).toBe('OK:systemctl status');
+    ws.close();
+    await app.close();
+  });
+
+  it('renvoie une erreur si les identifiants SSH sont refuses', async () => {
+    const app = await build();
+    await app.ready();
+    const ws = await app.injectWS('/host/ssh');
+    const failed = new Promise<Record<string, unknown>>((resolve) => {
+      ws.on('message', (raw: Buffer) => {
+        const m = JSON.parse(raw.toString()) as Record<string, unknown>;
+        if (m.type === 'error') resolve(m);
+      });
+    });
+    ws.send(JSON.stringify({ type: 'auth', token }));
+    ws.send(
+      JSON.stringify({ type: 'connect', user: 'mauvais', password: 'x', port: 22 })
+    );
+    const m = await failed;
+    expect(String(m.message)).toContain('Identifiants SSH refusés');
+    ws.close();
+    await app.close();
   });
 });

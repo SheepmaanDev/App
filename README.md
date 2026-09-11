@@ -202,6 +202,7 @@ Toutes les routes exigent `Authorization: Bearer <token>` sauf `/health`.
 | WS GET  | /containers/:id/logs/stream  | Logs en temps reel (WebSocket)       |
 | GET     | /services                    | Annuaire des services (services.yaml)|
 | GET     | /host/metrics                | Metriques machine (CPU, RAM, reseau…)|
+| WS GET  | /host/ssh                    | Terminal SSH (proxy ssh2 de l'hote)  |
 | POST    | /host/reboot                 | Redemarrer la machine hote (systemd) |
 
 `:id` accepte l'ID Docker (ou un prefixe unique) et le nom du conteneur.
@@ -255,6 +256,23 @@ de l'hote restent visibles -> statfs correct par montage, y compris NFS).
 Hors Docker (developpement), `systeminformation` mesure directement la
 machine locale.
 
+## Terminal SSH (Machine -> Terminal SSH)
+
+Depuis la page **Machine**, la ligne **Terminal SSH** ouvre un terminal
+de commandes vers la Debian. Le bridge joue le role de **proxy** : via un
+WebSocket `/host/ssh` (protege par le token, meme modele que les logs
+live), il se connecte avec `ssh2` au serveur SSH de la machine
+(`127.0.0.1`, port configurable via `SSH_PORT`, 22 par defaut) et relaie
+les commandes.
+
+- Identifiants stockes **uniquement sur le telephone** (SecureStore) et
+  transmis au bridge via le VPN au moment du connect.
+- Mode **sans PTY** : sortie propre ligne par ligne — privilegie les
+  commandes simples (`systemctl status`, `df -h`, `docker ps`, `tail`...) ;
+  les interfaces TUI (`htop`, `nano`) ne se rendent pas dans ce terminal.
+- Fermeture du flux = fin de la session SSH cote bridge (rien ne reste
+  ouvert).
+
 ## Tests
 
 ```bash
@@ -284,4 +302,5 @@ npm run build     # compilation TypeScript
 - **[x] Sprint 7** : supervision de la machine hote (GET /host/metrics, page Machine : CPU/RAM/disques/reseau/temperature ; compose network_mode host + pid host + /hostfs)
 - **[x] Sprint 8** : menu lateral (drawer ouvrable/fermable via bouton ☰) + page Accueil tableau de bord ; ordre Accueil / Machine / Conteneurs / Services / Reglages
 - **[x] Sprint 9** : RAM hors cache (MemAvailable), disques NFS/CIFS/SMB (propagation rslave), redemarrage de la machine (POST /host/reboot via socket D-Bus, bouton Reboot avec confirmation)
+- **[x] Sprint 10** : terminal SSH dans l'app (WS /host/ssh, proxy ssh2 vers 127.0.0.1, identifiants SecureStore, console sans PTY)
 - **Plus tard** : integration WireGuard dans l'app (profil + QR)
