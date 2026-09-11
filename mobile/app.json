@@ -59,7 +59,11 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
-    }
+      "router": {},
+      "eas": {
+        "projectId": "c79210b1-c551-4033-ac8e-41ebe4d9ac8b"
+      }
+    },
+    "owner": "sheepmaan"
   }
 }

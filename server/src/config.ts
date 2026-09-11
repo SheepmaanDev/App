@@ -8,6 +8,8 @@ export interface AppConfig {
   mockDocker: boolean;
   dockerSocket: string;
   servicesFile: string;
+  /** Port du serveur SSH de l'hote (terminal de l'app). */
+  sshPort: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -25,6 +27,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     dockerSocket: env.DOCKER_SOCKET ?? '/var/run/docker.sock',
     // Annuaire des services (YAML). Par defaut : services.yaml dans le
     // repertoire de travail du bridge (server/ en dev, /app dans Docker).
-    servicesFile: path.resolve(env.SERVICES_FILE ?? 'services.yaml')
+    servicesFile: path.resolve(env.SERVICES_FILE ?? 'services.yaml'),
+    // Port du serveur SSH de l'hote, utilise par le terminal de l'app.
+    sshPort: Number(env.SSH_PORT ?? 22)
   };
 }

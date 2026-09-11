@@ -14,10 +14,16 @@ interface BridgeConfig {
 interface BridgeStore extends BridgeConfig {
   /** Intervalle de rafraichissement auto (persiste). */
   autoRefresh: AutoRefreshInterval;
+  /** Identifiants SSH pour le terminal (persistes, SecureStore natif). */
+  sshUser: string;
+  sshPassword: string;
+  sshPort: number;
   /** Sauvegarde la config (persistee automatiquement). */
   setConfig: (baseUrl: string, token: string) => void;
   /** Change l'intervalle de rafraichissement auto. */
   setAutoRefresh: (interval: AutoRefreshInterval) => void;
+  /** Enregistre les identifiants SSH du terminal. */
+  setSshCreds: (user: string, password: string, port: number) => void;
   /** Construit un client pret a l'emploi avec la config courante. */
   getClient: () => BridgeClient;
 }
@@ -28,8 +34,13 @@ export const useBridgeStore = create<BridgeStore>()(
       baseUrl: '',
       token: '',
       autoRefresh: 0,
+      sshUser: '',
+      sshPassword: '',
+      sshPort: 22,
       setConfig: (baseUrl, token) => set({ baseUrl, token }),
       setAutoRefresh: (autoRefresh) => set({ autoRefresh }),
+      setSshCreds: (sshUser, sshPassword, sshPort) =>
+        set({ sshUser, sshPassword, sshPort }),
       getClient: () => new BridgeClient(get().baseUrl, get().token)
     }),
     {
@@ -38,7 +49,10 @@ export const useBridgeStore = create<BridgeStore>()(
       partialize: (state) => ({
         baseUrl: state.baseUrl,
         token: state.token,
-        autoRefresh: state.autoRefresh
+        autoRefresh: state.autoRefresh,
+        sshUser: state.sshUser,
+        sshPassword: state.sshPassword,
+        sshPort: state.sshPort
       })
     }
   )

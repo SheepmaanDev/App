@@ -22,8 +22,18 @@ services:
     volumes:
       # Socket Docker monte en LECTURE pour le bridge
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Racine de l'hote en LECTURE SEULE : statfs() pour les stats disques
-      - /:/hostfs:ro
+      # Socket D-Bus systeme : permet le redemarrage de l'hote via
+      # org.freedesktop.login1 (connect() fonctionne sur un montage :ro)
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
+      # Racine de l'hote en LECTURE SEULE : statfs() pour les stats disques.
+      # propagation rslave : les sous-montages de l'hote (/mnt/nas,
+      # /mnt/raid5...) restent visibles sous /hostfs -> statfs correct.
+      - type: bind
+        source: /
+        target: /hostfs
+        read_only: true
+        bind:
+          propagation: rslave
       # Annuaire des services : decommentez apres avoir copie
       # services.yaml.example vers services.yaml (a cote de ce compose)
       # - ./services.yaml:/app/services.yaml:ro

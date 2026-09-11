@@ -12,13 +12,18 @@ import { registerHealthRoutes } from './routes/health.js';
 import { registerHostRoutes } from './routes/host.js';
 import { registerLogsWsRoutes } from './routes/logs-ws.js';
 import { registerServiceRoutes } from './routes/services.js';
+import { registerSshRoutes } from './routes/ssh-ws.js';
 import { registerSystemRoutes } from './routes/system.js';
+import { createSshSessionFactory } from './ssh/session.js';
+import type { SshSessionFactory } from './ssh/session.js';
 
 export interface BuildAppOptions {
   config?: Partial<AppConfig>;
   docker?: DockerClient;
   /** Injecte un fournisseur de metriques hote (tests). Defaut : systeminformation. */
   hostClient?: HostClient;
+  /** Injecte une fabrique de sessions SSH (tests). Defaut : ssh2 vers 127.0.0.1. */
+  sshFactory?: SshSessionFactory;
   logger?: boolean;
 }
 
@@ -72,6 +77,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerLogsWsRoutes(app, docker, config.token);
   registerServiceRoutes(app, config.servicesFile, config.mockDocker);
   registerHostRoutes(app, hostClient);
+  registerSshRoutes(app, {
+    token: config.token,
+    factory: options.sshFactory ?? createSshSessionFactory()
+  });
 
   return app;
 }

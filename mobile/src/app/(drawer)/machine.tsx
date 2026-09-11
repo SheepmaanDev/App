@@ -19,7 +19,9 @@ import { useOnline } from '@/hooks/use-online';
 import { useBridgeConfigured, useBridgeStore } from '@/stores/use-bridge-store';
 import { colors, fonts, radius, spacing } from '@/theme';
 import type { HostMetricsResponse } from '@/types';
+import { confirmDialog, showError } from '@/utils/confirm';
 import { formatBytes, formatRate, formatUptime } from '@/utils/format';
+import { hapticError, hapticImpact, hapticSuccess } from '@/utils/haptics';
 
 const POLL_MS = 3000;
 
@@ -75,6 +77,21 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.6
+  },
+  dangerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6
+  },
+  dangerLabel: {
+    color: colors.danger,
+    fontSize: 12,
+    fontWeight: '600'
   },
   content: {
     padding: spacing.lg,
@@ -172,6 +189,7 @@ export default function MachineScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [rebooting, setRebooting] = useState(false);
 
   const load = useCallback(
     async (mode: 'initial' | 'refresh' | 'silent' = 'initial') => {
@@ -210,6 +228,33 @@ export default function MachineScreen() {
     }, POLL_MS);
     return () => clearInterval(id);
   }, [configured, load]);
+
+  // Redemarrage de la machine : double confirmation, message de suivi.
+  const handleReboot = useCallback(async () => {
+    void hapticImpact();
+    const ok = await confirmDialog(
+      'Redémarrer la machine ?',
+      'Le bridge sera indisponible pendant le redémarrage ; l\u2019app se reconnectera automatiquement ensuite.'
+    );
+    if (!ok) return;
+    setRebooting(true);
+    try {
+      await getClient().rebootHost();
+      await hapticSuccess();
+      showError(
+        'Redémarrage lancé',
+        'La machine redémarre. L\u2019app se reconnectera automatiquement.'
+      );
+    } catch (err) {
+      await hapticError();
+      showError(
+        'Redémarrage impossible',
+        err instanceof Error ? err.message : String(err)
+      );
+    } finally {
+      setRebooting(false);
+    }
+  }, [getClient]);
 
   if (!configured) {
     return (
@@ -339,7 +384,7 @@ export default function MachineScreen() {
             <Text style={styles.bigValue}>{m.memory.percent.toFixed(0)} %</Text>
             <MetricBar percent={m.memory.percent} />
             <View style={styles.row}>
-              <Text style={styles.rowLabel}>Utilisée</Text>
+              <Text style={styles.rowLabel}>Utilisée (hors cache)</Text>
               <Text style={[styles.rowValue, styles.mono]}>
                 {formatBytes(m.memory.used)} / {formatBytes(m.memory.total)}
               </Text>
@@ -452,6 +497,37 @@ export default function MachineScreen() {
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Architecture</Text>
               <Text style={styles.rowValue}>{info.arch}</Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.row,
+                pressed && styles.pressed,
+                { marginTop: spacing.xs }
+              ]}
+              onPress={() => router.push('/ssh')}
+            >
+              <Text style={styles.rowLabel}>Terminal SSH</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </Pressable>
+            <View style={[styles.row, { marginTop: spacing.xs }]}>
+              <Text style={styles.rowLabel}>Redémarrer la machine</Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.dangerButton,
+                  pressed && styles.pressed
+                ]}
+                onPress={() => void handleReboot()}
+                disabled={rebooting}
+              >
+                {rebooting ? (
+                  <ActivityIndicator size="small" color={colors.danger} />
+                ) : (
+                  <Ionicons name="refresh" size={13} color={colors.danger} />
+                )}
+                <Text style={styles.dangerLabel}>
+                  {rebooting ? 'En cours…' : 'Reboot'}
+                </Text>
+              </Pressable>
             </View>
           </View>
         </ScrollView>

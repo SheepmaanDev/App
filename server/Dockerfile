@@ -12,6 +12,8 @@ RUN npm run build
 # Pour durcir : cree un groupe avec le meme GID que 'docker' sur l'hote
 # (group_add: <gid_host_docker>) et passe a USER node.
 FROM node:22-alpine AS runtime
+# dbus : dbus-send, utilise pour le redemarrage de l'hote via son socket D-Bus.
+RUN apk add --no-cache dbus
 ENV NODE_ENV=production
 WORKDIR /app
 COPY package*.json ./
