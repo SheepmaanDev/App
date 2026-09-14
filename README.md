@@ -303,4 +303,3 @@ npm run build     # compilation TypeScript
 - **[x] Sprint 8** : menu lateral (drawer ouvrable/fermable via bouton ☰) + page Accueil tableau de bord ; ordre Accueil / Machine / Conteneurs / Services / Reglages
 - **[x] Sprint 9** : RAM hors cache (MemAvailable), disques NFS/CIFS/SMB (propagation rslave), redemarrage de la machine (POST /host/reboot via socket D-Bus, bouton Reboot avec confirmation)
 - **[x] Sprint 10** : terminal SSH dans l'app (WS /host/ssh, proxy ssh2 vers 127.0.0.1, identifiants SecureStore, console sans PTY)
-- **Plus tard** : integration WireGuard dans l'app (profil + QR)
